@@ -3,6 +3,7 @@ package com.darekbx.emailbot.ui.emails
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.darekbx.emailbot.BuildConfig
+import com.darekbx.emailbot.bot.markSpam
 import com.darekbx.emailbot.domain.AddSpamFilterUseCase
 import com.darekbx.emailbot.domain.FetchSpamFiltersUseCase
 import com.darekbx.emailbot.imap.FetchEmails
@@ -35,17 +36,9 @@ class EmailsViewModel(
             try {
                 val spamFilters = fetchSpamFiltersUseCase.invoke()
                 //val emails = MOCK_EMAILS
-                val emails = fetchEmails.fetch(limit = 10)
-
-                emails.forEach { email ->
-                    email.isSpam = spamFilters.any { filter ->
-                        val fromFilter = filter.from
-                        val subjectFilter = filter.subject
-
-                        (fromFilter != null && email.from.contains(fromFilter)) ||
-                                (subjectFilter != null && email.subject.contains(subjectFilter))
-                    }
-                }
+                val emails = fetchEmails.fetch()
+                    .sortedByDescending { it.messageNumber }
+                emails.markSpam(spamFilters)
 
                 _uiState.value = EmailsUiState.Success(emails)
             } catch (e: Exception) {
@@ -74,6 +67,7 @@ class EmailsViewModel(
         val MOCK_EMAILS = listOf(
             Email(
                 "17x76357.1833303.1670218686@info.fastymail.pl",
+                0,
                 "sts@digitaldynamicsx.pl",
                 "anyone@o2-all.pl",
                 "Trzaskowski czy Nawrocki?\uD83E\uDD14 Kto zostanie prezydentem? Sprawdź, ile możesz wygrać!\uD83E\uDD11",
@@ -82,6 +76,7 @@ class EmailsViewModel(
             ).also { it.isSpam = true },
             Email(
                 "17x76331.1833453.1670628738@info.fastymail.pl",
+                1,
                 "depilacja@ecommercefunnel.pl",
                 "anyone@o2-all.pl",
                 "Efekty już po 2 zabiegach! Zadbaj o siebie z depilatorem Braun>>",
@@ -89,7 +84,8 @@ class EmailsViewModel(
                 "2025-05-29 09:00:28"
             ),
             Email(
-                "c8ca725b7de14819442413713ac8b417@mlsend.com",
+                null,
+                2,
                 "accounts.mailerlite@infinum.email",
                 "anyone@o2-all.pl",
                 "Process Death Is Inevitable",

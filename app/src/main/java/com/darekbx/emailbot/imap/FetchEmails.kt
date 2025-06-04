@@ -19,7 +19,7 @@ class FetchEmails(
     private val encryptedConfiguration: EncryptedConfiguration
 ) {
 
-    suspend fun fetch(limit: Int = 100): List<Email> {
+    suspend fun fetch(): List<Email> {
         val configuration: ConfigurationInfo? = encryptedConfiguration.loadConfiguration()
         if (configuration == null) {
             throw IllegalStateException("Configuration not found")
@@ -34,7 +34,6 @@ class FetchEmails(
 
                 emails.addAll(
                     inbox.getMessages()
-                        .takeLast(limit)
                         .map { message -> createEmail(message) }
                 )
 
@@ -47,6 +46,7 @@ class FetchEmails(
 
     private fun createEmail(message: Message): Email = Email(
         messageId = message.messageID(),
+        messageNumber = message.messageNumber,
         from = (message.from.firstOrNull() as? InternetAddress)?.address.orEmpty(),
         to = (message.getRecipients(Message.RecipientType.TO)
             ?.firstOrNull() as? InternetAddress)?.address.orEmpty(),
@@ -56,11 +56,15 @@ class FetchEmails(
     )
 
     private fun extractEmailContent(message: Message): EmailContent {
-        return when {
-            message.isMimeType("text/plain") -> EmailContent.Text(message.content.toString())
-            message.isMimeType("text/html") -> EmailContent.Html(message.content.toString())
-            message.isMimeType("multipart/*") -> extractMultipart(message.content as? Multipart)
-            else -> EmailContent.Unknown
+        try {
+            return when {
+                message.isMimeType("text/plain") -> EmailContent.Text(message.content.toString())
+                message.isMimeType("text/html") -> EmailContent.Html(message.content.toString())
+                message.isMimeType("multipart/*") -> extractMultipart(message.content as? Multipart)
+                else -> EmailContent.Unknown
+            }
+        } catch (_: Exception) {
+            return EmailContent.Unknown
         }
     }
 

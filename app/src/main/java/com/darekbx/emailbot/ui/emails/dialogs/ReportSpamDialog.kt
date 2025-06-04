@@ -1,11 +1,15 @@
-package com.darekbx.emailbot.ui.emails
+package com.darekbx.emailbot.ui.emails.dialogs
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -19,10 +23,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.darekbx.emailbot.model.Email
-import com.darekbx.emailbot.model.EmailContent
+import com.darekbx.emailbot.ui.emails.EmailsViewModel
 
 @Composable
-fun ReportSpamDialog(email: Email, onSave: (from: String, subject: String) -> Unit, onDismiss: () -> Unit) {
+fun ReportSpamDialog(
+    email: Email,
+    onSave: (from: String, subject: String) -> Unit,
+    onDismiss: () -> Unit
+) {
     var fromField by remember { mutableStateOf(email.from) }
     var subjectField by remember { mutableStateOf(email.subject) }
 
@@ -51,6 +59,13 @@ fun ReportSpamDialog(email: Email, onSave: (from: String, subject: String) -> Un
                     value = fromField,
                     onValueChange = { fromField = it },
                     label = { Text("From") },
+                    trailingIcon = {
+                        Icon(
+                            modifier = Modifier.clickable { fromField = "" },
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Clear"
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp),
                     singleLine = true
@@ -60,6 +75,13 @@ fun ReportSpamDialog(email: Email, onSave: (from: String, subject: String) -> Un
                     value = subjectField,
                     onValueChange = { subjectField = it },
                     label = { Text("Subject") },
+                    trailingIcon = {
+                        Icon(
+                            modifier = Modifier.clickable { subjectField = "" },
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Clear"
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp),
                     singleLine = true
@@ -82,7 +104,7 @@ fun ReportSpamDialog(email: Email, onSave: (from: String, subject: String) -> Un
 @Preview(showBackground = true)
 @Composable
 private fun ReportSpamDialogPreview() {
-    val mockEmail = EmailsViewModel.MOCK_EMAILS[0]
+    val mockEmail = EmailsViewModel.Companion.MOCK_EMAILS[0]
     ReportSpamDialog(
         email = mockEmail,
         onSave = { _, _ -> },

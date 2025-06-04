@@ -23,9 +23,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ProgressView() {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.55F)),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(Modifier.size(64.dp))

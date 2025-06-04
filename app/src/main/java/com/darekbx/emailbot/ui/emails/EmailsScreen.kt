@@ -5,24 +5,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.absoluteOffset
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Done
-import androidx.compose.material.icons.outlined.Warning
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,13 +29,15 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.darekbx.emailbot.model.Email
 import com.darekbx.emailbot.ui.ErrorView
 import com.darekbx.emailbot.ui.ProgressView
+import com.darekbx.emailbot.ui.emails.dialogs.EmailDialog
+import com.darekbx.emailbot.ui.emails.dialogs.ReportSpamDialog
 import com.darekbx.emailbot.ui.theme.EmailBotTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -52,6 +45,7 @@ import org.koin.androidx.compose.koinViewModel
 fun EmailsScreen(viewModel: EmailsViewModel = koinViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     var emailToReport by remember { mutableStateOf<Email?>(null) }
+    var emailToView by remember { mutableStateOf<Email?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.fetchEmails()
@@ -62,7 +56,9 @@ fun EmailsScreen(viewModel: EmailsViewModel = koinViewModel()) {
             is EmailsUiState.Idle -> { /* NOOP */ }
             is EmailsUiState.Loading -> ProgressView()
             is EmailsUiState.Error -> ErrorView(state.e) { viewModel.resetState() }
-            is EmailsUiState.Success -> EmailsList(state.emails, onReportSpam = { emailToReport = it })
+            is EmailsUiState.Success -> EmailsList(
+                state.emails,
+                onReportSpam = { emailToReport = it })
         }
     }
 
@@ -76,18 +72,26 @@ fun EmailsScreen(viewModel: EmailsViewModel = koinViewModel()) {
             onDismiss = { emailToReport = null }
         )
     }
+
+    emailToView?.let { email ->
+        EmailDialog(
+            email = email,
+            onDismiss = { emailToView = null }
+        )
+    }
 }
 
 @Composable
 private fun EmailsList(emails: List<Email>, onReportSpam: (Email) -> Unit = {}) {
-    LazyColumn(Modifier.fillMaxWidth().padding(8.dp)) {
+    LazyColumn(Modifier
+        .fillMaxWidth()
+        .padding(8.dp)) {
         itemsIndexed(items = emails) { index, email ->
             val backgroundColor = if (index % 2 == 0) {
                 MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
             } else {
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             }
-
             EmailItem(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -110,11 +114,19 @@ private fun EmailItem(modifier: Modifier, email: Email, onReportSpam: (Email) ->
         modifier = modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .padding(8.dp),
+            .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1F)) {
+            if (email.messageId == null) {
+                Text(
+                    text = "No message ID",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier
+                )
+            }
             Text(
                 modifier = Modifier,
                 text = email.dateTime,
@@ -128,11 +140,11 @@ private fun EmailItem(modifier: Modifier, email: Email, onReportSpam: (Email) ->
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
                         )
-                    ) {
-                        append("From: ")
-                    }
+                    ) { append("From: ") }
                     append(email.from)
                 },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.bodyLarge
             )
             Text(
@@ -142,11 +154,11 @@ private fun EmailItem(modifier: Modifier, email: Email, onReportSpam: (Email) ->
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
                         )
-                    ) {
-                        append("To: ")
-                    }
+                    ) { append("To: ") }
                     append(email.to)
                 },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.bodyLarge
             )
             Text(
@@ -154,65 +166,35 @@ private fun EmailItem(modifier: Modifier, email: Email, onReportSpam: (Email) ->
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.bodyMedium
             )
+
+            Row(
+                modifier = Modifier.padding(top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(onClick = { }) {
+                    Text("Delete")
+                }
+                if (!email.isSpam && !reportSpamClicked) {
+                    OutlinedButton(onClick = {
+                        if (!reportSpamClicked) {
+                            onReportSpam(email)
+                        }
+                        reportSpamClicked = true
+                    }) {
+                        Text("Report spam")
+                    }
+                }
+            }
         }
-        if (email.isSpam) {
+        if (email.isSpam || reportSpamClicked) {
             Text(
                 text = "Spam",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(start = 4.dp).rotate(90F)
+                modifier = Modifier
+                    .padding(start = 4.dp)
+                    .rotate(90F)
             )
-        } else {
-            Button(
-                modifier = Modifier.fillMaxHeight().padding(start = 4.dp),
-                contentPadding = PaddingValues(0.dp),
-                shape = RoundedCornerShape(8.dp),
-                onClick = {
-                    if (!reportSpamClicked) {
-                        onReportSpam(email)
-                    }
-                    reportSpamClicked = true
-                }
-            ) {
-                if (reportSpamClicked) {
-                    Icon(
-                        imageVector = Icons.Outlined.Done,
-                        contentDescription = "spam",
-                        modifier = Modifier.size(24.dp)
-                    )
-                } else {
-                    SpamButton()
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SpamButton() {
-    Column(
-        modifier = Modifier,
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(imageVector = Icons.Outlined.Warning, contentDescription = "spam")
-        Text(
-            text = "Report\nSpam",
-            style = MaterialTheme.typography.labelSmall,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.absoluteOffset(y = 2.dp)
-        )
-    }
-}
-
-@Preview
-@Composable
-private fun SpamButtonPreview() {
-    EmailBotTheme {
-        Surface(
-            color = MaterialTheme.colorScheme.background
-        ) {
-            SpamButton()
         }
     }
 }

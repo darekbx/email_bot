@@ -5,15 +5,18 @@ import android.content.Context
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.darekbx.emailbot.BuildConfig
+import com.darekbx.emailbot.bot.CleanUpBot
 import com.darekbx.emailbot.domain.AddSpamFilterUseCase
 import com.darekbx.emailbot.domain.FetchSpamFiltersUseCase
 import com.darekbx.emailbot.imap.Connection
+import com.darekbx.emailbot.imap.EmailOperations
 import com.darekbx.emailbot.imap.FetchEmails
 import com.darekbx.emailbot.repository.database.AppDatabase
 import com.darekbx.emailbot.repository.database.dao.SpamDao
 import com.darekbx.emailbot.ui.configuration.ui.ConfigurationViewModel
 import com.darekbx.emailbot.repository.storage.CryptoUtils
 import com.darekbx.emailbot.repository.storage.EncryptedConfiguration
+import com.darekbx.emailbot.ui.MainActivityViewModel
 import com.darekbx.emailbot.ui.emails.EmailsViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
@@ -27,6 +30,8 @@ val appModules = module {
     single(named("master.key")) { BuildConfig.MASTER_KEY }
     single { CryptoUtils(get(named("master.key"))) }
     single { EncryptedConfiguration(get(), get()) }
+
+    factory { CleanUpBot(get(), get(), get()) }
 }
 
 val databaseModule = module {
@@ -46,9 +51,11 @@ val domainModule = module {
 val imap = module {
     factory { Connection() }
     factory { FetchEmails(get(), get()) }
+    factory { EmailOperations(get(), get()) }
 }
 
 val viewModelModule = module {
     viewModel { ConfigurationViewModel(get(), get()) }
     viewModel { EmailsViewModel(get(), get(), get()) }
+    viewModel { MainActivityViewModel(get()) }
 }

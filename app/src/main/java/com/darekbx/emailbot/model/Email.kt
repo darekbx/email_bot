@@ -2,6 +2,7 @@ package com.darekbx.emailbot.model
 
 data class Email(
     val messageId: String?,
+    val messageNumber: Int,
     val from: String,
     val to: String,
     val subject: String,

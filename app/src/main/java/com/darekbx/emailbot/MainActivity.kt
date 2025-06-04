@@ -1,28 +1,42 @@
 package com.darekbx.emailbot
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.rememberNavController
 import com.darekbx.emailbot.ui.theme.EmailBotTheme
 import com.darekbx.emailbot.navigation.AppNavHost
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import com.darekbx.emailbot.ui.MainActivityViewModel
+import com.darekbx.emailbot.ui.MainUiState
 import org.koin.androidx.compose.KoinAndroidContext
-import java.util.Properties
-import javax.mail.Folder
-import javax.mail.Session
+import org.koin.androidx.compose.koinViewModel
 
 /**
  * Email Bot
@@ -40,7 +54,7 @@ import javax.mail.Session
  *    - Kalejdoskop newsletter
  *    - Infinite Android newsletter
  *    - Unknown news newsletter
-*/
+ */
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,42 +65,69 @@ class MainActivity : ComponentActivity() {
             KoinAndroidContext {
                 val navController = rememberNavController()
                 EmailBotTheme {
-                    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    Scaffold(
+                        modifier = Modifier.fillMaxSize(),
+                        topBar = { AppBar() }
+                    ) { innerPadding ->
                         AppNavHost(navController, modifier = Modifier.padding(innerPadding))
                     }
                 }
             }
         }
     }
-}
 
-@Composable
-private fun Test(innerPadding: PaddingValues) {
-    Button(modifier = Modifier.padding(innerPadding), onClick = {
+    @Composable
+    @OptIn(ExperimentalMaterial3Api::class)
+    private fun AppBar(viewModel: MainActivityViewModel = koinViewModel()) {
+        val uiState by viewModel.uiState.collectAsState()
+        Surface(shadowElevation = 4.dp) {
+            TopAppBar(
+                title = { Text("Email Bot") },
+                colors = TopAppBarDefaults.topAppBarColors(),
+                actions = {
+                    Row {
+                        IconButton(onClick = { viewModel.cleanUp() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.List,
+                                contentDescription = "Filters"
+                            )
+                        }
+                        IconButton(onClick = { }) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh"
+                            )
+                        }
+                        Box {
+                            when (val state = uiState) {
+                                MainUiState.Loading -> {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier
+                                            .padding(8.dp)
+                                            .size(24.dp)
+                                    )
+                                }
 
-        try {
+                                is MainUiState.Error -> {
+                                    Icon(
+                                        imageVector = Icons.Default.Warning,
+                                        contentDescription = state.e.message,
+                                        modifier = Modifier.padding(8.dp)
+                                    )
+                                }
 
-            CoroutineScope(Dispatchers.IO).launch {
-                val props = Properties().apply {
-                    put("mail.imap.host", "imap.poczta.onet.pl")
-                    put("mail.imap.port", "993")
-                    put("mail.imap.ssl.enable", "true")
-                }
-
-                val session = Session.getInstance(props, null)
-                val store = session.getStore("imap")
-                store.connect("pwszbp@op.pl", "")
-
-                val folder = store.getFolder("INBOX")
-                folder.open(Folder.READ_ONLY)
-
-                val messages = folder.messages.takeLast(10)
-                val count = messages.size
-                Log.d("sigma", "Number of messages: $count")
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
+                                else -> {
+                                    IconButton(onClick = { viewModel.cleanUp() }) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_clean),
+                                            contentDescription = "Clean up"
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                })
         }
-
-    }) { Text("Test") }
+    }
 }
