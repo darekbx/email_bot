@@ -13,4 +13,7 @@ interface SpamDao {
 
     @Query("SELECT * FROM spam_item")
     suspend fun getAll(): List<SpamDto>
+
+    @Query("DELETE FROM spam_item WHERE id = :id")
+    suspend fun delete(id: String)
 }

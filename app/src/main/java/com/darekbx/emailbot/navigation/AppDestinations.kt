@@ -11,3 +11,8 @@ object ConfigurationDestination : AppDestinations {
 object EmailsDestination : AppDestinations {
     override val route = "emails"
 }
+
+object FiltersDestination : AppDestinations {
+    override val route = "filters"
+}
+

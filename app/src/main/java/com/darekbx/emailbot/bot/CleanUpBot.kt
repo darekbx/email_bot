@@ -4,6 +4,7 @@ import android.util.Log
 import com.darekbx.emailbot.imap.EmailOperations
 import com.darekbx.emailbot.imap.FetchEmails
 import com.darekbx.emailbot.model.Email
+import com.darekbx.emailbot.repository.RefreshBus
 import com.darekbx.emailbot.repository.database.dao.SpamDao
 import com.darekbx.emailbot.repository.database.entities.SpamDto
 import kotlinx.coroutines.Dispatchers
@@ -14,7 +15,8 @@ import kotlin.text.contains
 class CleanUpBot(
     private val fetchEmails: FetchEmails,
     private val emailOperations: EmailOperations,
-    private val spamDao: SpamDao
+    private val spamDao: SpamDao,
+    private val refreshBus: RefreshBus
 ) {
     suspend fun cleanUp() {
         withContext(Dispatchers.IO) {
@@ -38,6 +40,9 @@ class CleanUpBot(
             // 5. Delete spam emails
             emailOperations.removeEmail(*spamMessageNumbers.toIntArray())
                 .also { Log.d("CleanUpBot", "Removed $it spam emails") }
+
+            // 6. Notify about refresh
+            refreshBus.publishChanges()
         }
     }
 }

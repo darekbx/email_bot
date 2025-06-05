@@ -7,10 +7,12 @@ import androidx.room.Room
 import com.darekbx.emailbot.BuildConfig
 import com.darekbx.emailbot.bot.CleanUpBot
 import com.darekbx.emailbot.domain.AddSpamFilterUseCase
+import com.darekbx.emailbot.domain.DeleteSpamFilterUseCase
 import com.darekbx.emailbot.domain.FetchSpamFiltersUseCase
 import com.darekbx.emailbot.imap.Connection
 import com.darekbx.emailbot.imap.EmailOperations
 import com.darekbx.emailbot.imap.FetchEmails
+import com.darekbx.emailbot.repository.RefreshBus
 import com.darekbx.emailbot.repository.database.AppDatabase
 import com.darekbx.emailbot.repository.database.dao.SpamDao
 import com.darekbx.emailbot.ui.configuration.ui.ConfigurationViewModel
@@ -18,6 +20,7 @@ import com.darekbx.emailbot.repository.storage.CryptoUtils
 import com.darekbx.emailbot.repository.storage.EncryptedConfiguration
 import com.darekbx.emailbot.ui.MainActivityViewModel
 import com.darekbx.emailbot.ui.emails.EmailsViewModel
+import com.darekbx.emailbot.ui.filters.FiltersViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
@@ -31,7 +34,8 @@ val appModules = module {
     single { CryptoUtils(get(named("master.key"))) }
     single { EncryptedConfiguration(get(), get()) }
 
-    factory { CleanUpBot(get(), get(), get()) }
+    factory { CleanUpBot(get(), get(), get(), get()) }
+    single { RefreshBus() }
 }
 
 val databaseModule = module {
@@ -46,6 +50,7 @@ val databaseModule = module {
 val domainModule = module {
     factory { AddSpamFilterUseCase(get()) }
     factory { FetchSpamFiltersUseCase(get()) }
+    factory { DeleteSpamFilterUseCase(get()) }
 }
 
 val imap = module {
@@ -56,6 +61,7 @@ val imap = module {
 
 val viewModelModule = module {
     viewModel { ConfigurationViewModel(get(), get()) }
-    viewModel { EmailsViewModel(get(), get(), get()) }
-    viewModel { MainActivityViewModel(get()) }
+    viewModel { EmailsViewModel(get(), get(), get(), get()) }
+    viewModel { MainActivityViewModel(get(), get()) }
+    viewModel { FiltersViewModel(get(), get()) }
 }

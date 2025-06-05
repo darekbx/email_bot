@@ -5,14 +5,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.rememberNavController
 import com.darekbx.emailbot.ui.theme.EmailBotTheme
 import com.darekbx.emailbot.navigation.AppNavHost
+import com.darekbx.emailbot.navigation.FiltersDestination
 import com.darekbx.emailbot.ui.MainActivityViewModel
 import com.darekbx.emailbot.ui.MainUiState
 import org.koin.androidx.compose.KoinAndroidContext
@@ -42,9 +41,6 @@ import org.koin.androidx.compose.koinViewModel
  * Email Bot
  *
  * TODO:
- *  - Configuration screen where user will configure email account
- *  - Fetch only title, email, date
- *  - Database where will be stored filters
  *  - Service with configured interval (1h/2h/4h/8h) which will check emails, and remove spam
  *  - Notification when flow was completed with summary (how many mails, how many spam, how many important)
  *  - Store in database latest emails, which need to check if they are spam
@@ -67,7 +63,9 @@ class MainActivity : ComponentActivity() {
                 EmailBotTheme {
                     Scaffold(
                         modifier = Modifier.fillMaxSize(),
-                        topBar = { AppBar() }
+                        topBar = {
+                            AppBar(openFilters = { navController.navigate(FiltersDestination.route) })
+                        }
                     ) { innerPadding ->
                         AppNavHost(navController, modifier = Modifier.padding(innerPadding))
                     }
@@ -78,7 +76,11 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     @OptIn(ExperimentalMaterial3Api::class)
-    private fun AppBar(viewModel: MainActivityViewModel = koinViewModel()) {
+    private fun AppBar(
+        viewModel: MainActivityViewModel = koinViewModel(),
+        openFilters: () -> Unit = {},
+        refresh: () -> Unit = {}
+    ) {
         val uiState by viewModel.uiState.collectAsState()
         Surface(shadowElevation = 4.dp) {
             TopAppBar(
@@ -86,13 +88,13 @@ class MainActivity : ComponentActivity() {
                 colors = TopAppBarDefaults.topAppBarColors(),
                 actions = {
                     Row {
-                        IconButton(onClick = { viewModel.cleanUp() }) {
+                        IconButton(onClick = openFilters) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.List,
                                 contentDescription = "Filters"
                             )
                         }
-                        IconButton(onClick = { }) {
+                        IconButton(onClick = { viewModel.refresh() }) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = "Refresh"

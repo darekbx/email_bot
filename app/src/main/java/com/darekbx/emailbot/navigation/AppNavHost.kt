@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.darekbx.emailbot.ui.configuration.ui.ConfigurationScreen
 import com.darekbx.emailbot.ui.emails.EmailsScreen
+import com.darekbx.emailbot.ui.filters.FiltersScreen
 
 @Composable
 fun AppNavHost(
@@ -28,6 +29,10 @@ fun AppNavHost(
 
         composable(route = EmailsDestination.route) {
             EmailsScreen()
+        }
+
+        composable(route = FiltersDestination.route) {
+            FiltersScreen()
         }
     }
 }

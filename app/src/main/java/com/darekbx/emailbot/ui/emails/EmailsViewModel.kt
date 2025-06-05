@@ -9,6 +9,7 @@ import com.darekbx.emailbot.domain.FetchSpamFiltersUseCase
 import com.darekbx.emailbot.imap.FetchEmails
 import com.darekbx.emailbot.model.Email
 import com.darekbx.emailbot.model.EmailContent
+import com.darekbx.emailbot.repository.RefreshBus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,11 +25,24 @@ sealed interface EmailsUiState {
 class EmailsViewModel(
     private val fetchEmails: FetchEmails,
     private val addSpamFilterUseCase: AddSpamFilterUseCase,
-    private val fetchSpamFiltersUseCase: FetchSpamFiltersUseCase
+    private val fetchSpamFiltersUseCase: FetchSpamFiltersUseCase,
+    private val refreshBus: RefreshBus
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<EmailsUiState>(EmailsUiState.Idle)
     val uiState: StateFlow<EmailsUiState> = _uiState.asStateFlow()
+
+    init {
+        listenForChanges()
+    }
+
+    private fun listenForChanges() {
+        viewModelScope.launch {
+            refreshBus.listenForChanges().collect {
+                fetchEmails()
+            }
+        }
+    }
 
     fun fetchEmails() {
         viewModelScope.launch {

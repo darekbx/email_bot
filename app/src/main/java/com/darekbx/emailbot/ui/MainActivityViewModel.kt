@@ -4,11 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.darekbx.emailbot.BuildConfig
 import com.darekbx.emailbot.bot.CleanUpBot
+import com.darekbx.emailbot.repository.RefreshBus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 sealed interface MainUiState {
     data object Idle : MainUiState
@@ -16,7 +16,10 @@ sealed interface MainUiState {
     data class Error(val e: Throwable) : MainUiState
 }
 
-class MainActivityViewModel(private val cleanUpBot: CleanUpBot) : ViewModel() {
+class MainActivityViewModel(
+    private val cleanUpBot: CleanUpBot,
+    private val refreshBus: RefreshBus
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MainUiState>(MainUiState.Idle)
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
@@ -33,6 +36,12 @@ class MainActivityViewModel(private val cleanUpBot: CleanUpBot) : ViewModel() {
                 }
                 _uiState.value = MainUiState.Error(e)
             }
+        }
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            refreshBus.publishChanges()
         }
     }
 }
