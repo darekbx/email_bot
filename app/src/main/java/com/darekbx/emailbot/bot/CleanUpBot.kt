@@ -18,8 +18,13 @@ class CleanUpBot(
     private val spamDao: SpamDao,
     private val refreshBus: RefreshBus
 ) {
-    suspend fun cleanUp() {
-        withContext(Dispatchers.IO) {
+    data class Result(
+        val removedCount: Int,
+        val messagesCount: Int
+    )
+
+    suspend fun cleanUp() : Result {
+        return withContext(Dispatchers.IO) {
             // 1. Fetch spam filters
             val spamFilters = spamDao.getAll()
                 .also { Log.d("CleanUpBot", "Fetched ${it.size} filters") }
@@ -38,11 +43,13 @@ class CleanUpBot(
                 .also { Log.d("CleanUpBot", "Found ${it.size} spam emails") }
 
             // 5. Delete spam emails
-            emailOperations.removeEmail(*spamMessageNumbers.toIntArray())
+            val removedCount = emailOperations.removeEmail(*spamMessageNumbers.toIntArray())
                 .also { Log.d("CleanUpBot", "Removed $it spam emails") }
 
             // 6. Notify about refresh
             refreshBus.publishChanges()
+
+            Result(removedCount, emails.size - removedCount)
         }
     }
 }

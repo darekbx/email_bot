@@ -6,14 +6,17 @@ import com.darekbx.emailbot.BuildConfig
 import com.darekbx.emailbot.bot.markSpam
 import com.darekbx.emailbot.domain.AddSpamFilterUseCase
 import com.darekbx.emailbot.domain.FetchSpamFiltersUseCase
+import com.darekbx.emailbot.imap.EmailOperations
 import com.darekbx.emailbot.imap.FetchEmails
 import com.darekbx.emailbot.model.Email
 import com.darekbx.emailbot.model.EmailContent
 import com.darekbx.emailbot.repository.RefreshBus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 sealed interface EmailsUiState {
     data object Idle : EmailsUiState
@@ -26,6 +29,7 @@ class EmailsViewModel(
     private val fetchEmails: FetchEmails,
     private val addSpamFilterUseCase: AddSpamFilterUseCase,
     private val fetchSpamFiltersUseCase: FetchSpamFiltersUseCase,
+    private val emailOperations: EmailOperations,
     private val refreshBus: RefreshBus
 ) : ViewModel() {
 
@@ -73,11 +77,31 @@ class EmailsViewModel(
         }
     }
 
+    fun deleteEmail(email: Email) {
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    emailOperations.removeEmail(email.messageNumber)
+                }
+            } catch (e: Exception) {
+                if (BuildConfig.DEBUG) {
+                    e.printStackTrace()
+                }
+                _uiState.value = EmailsUiState.Error(e)
+            }
+        }
+    }
+
     fun resetState() {
         _uiState.value = EmailsUiState.Idle
     }
 
     companion object {
+        val SPECIAL_EMAILS_FROM = listOf(
+            "mrugalski.pl",
+            "infinum.email",
+            "sebastianchudziak.pl"
+        )
         val MOCK_EMAILS = listOf(
             Email(
                 "17x76357.1833303.1670218686@info.fastymail.pl",

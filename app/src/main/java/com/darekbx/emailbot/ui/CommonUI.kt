@@ -20,6 +20,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
+inline fun Modifier.ifTrue(value: Boolean, builder: Modifier.() -> Modifier): Modifier =
+    if (value) this.builder() else this
+
 @Composable
 fun ProgressView() {
     Box(

@@ -1,6 +1,7 @@
 package com.darekbx.emailbot.ui.emails
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -36,8 +38,10 @@ import androidx.compose.ui.unit.dp
 import com.darekbx.emailbot.model.Email
 import com.darekbx.emailbot.ui.ErrorView
 import com.darekbx.emailbot.ui.ProgressView
+import com.darekbx.emailbot.ui.emails.EmailsViewModel.Companion.SPECIAL_EMAILS_FROM
 import com.darekbx.emailbot.ui.emails.dialogs.EmailDialog
 import com.darekbx.emailbot.ui.emails.dialogs.ReportSpamDialog
+import com.darekbx.emailbot.ui.ifTrue
 import com.darekbx.emailbot.ui.theme.EmailBotTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -58,7 +62,10 @@ fun EmailsScreen(viewModel: EmailsViewModel = koinViewModel()) {
             is EmailsUiState.Error -> ErrorView(state.e) { viewModel.resetState() }
             is EmailsUiState.Success -> EmailsList(
                 state.emails,
-                onReportSpam = { emailToReport = it })
+                onReportSpam = { emailToReport = it },
+                onEmailDelete = { viewModel.deleteEmail(it) },
+                onOpenEmail = { emailToView = it }
+            )
         }
     }
 
@@ -82,10 +89,17 @@ fun EmailsScreen(viewModel: EmailsViewModel = koinViewModel()) {
 }
 
 @Composable
-private fun EmailsList(emails: List<Email>, onReportSpam: (Email) -> Unit = {}) {
-    LazyColumn(Modifier
-        .fillMaxWidth()
-        .padding(8.dp)) {
+private fun EmailsList(
+    emails: List<Email>,
+    onReportSpam: (Email) -> Unit = {},
+    onEmailDelete: (Email) -> Unit = {},
+    onOpenEmail: (Email) -> Unit = {}
+) {
+    LazyColumn(
+        Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+    ) {
         itemsIndexed(items = emails) { index, email ->
             val backgroundColor = if (index % 2 == 0) {
                 MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
@@ -101,24 +115,37 @@ private fun EmailsList(emails: List<Email>, onReportSpam: (Email) -> Unit = {}) 
                         shape = MaterialTheme.shapes.small
                     ),
                 email = email,
-                onReportSpam = onReportSpam
+                onReportSpam = onReportSpam,
+                onEmailDelete = onEmailDelete,
+                onOpenEmail = onOpenEmail
             )
         }
     }
 }
 
 @Composable
-private fun EmailItem(modifier: Modifier, email: Email, onReportSpam: (Email) -> Unit = {}) {
+private fun EmailItem(
+    modifier: Modifier,
+    email: Email,
+    onReportSpam: (Email) -> Unit = {},
+    onEmailDelete: (Email) -> Unit = {},
+    onOpenEmail: (Email) -> Unit = {}
+) {
     var reportSpamClicked by remember { mutableStateOf(false) }
+    var deleted by remember { mutableStateOf(false) }
+    val isSpecial = remember { SPECIAL_EMAILS_FROM.any { email.from.contains(it) } }
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
+            .ifTrue(isSpecial) { border(2.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.small) }
             .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1F)) {
+        Column(modifier = Modifier
+            .weight(1F)
+            .alpha(if (deleted) 0.25f else 1f)) {
             if (email.messageId == null) {
                 Text(
                     text = "No message ID",
@@ -171,7 +198,13 @@ private fun EmailItem(modifier: Modifier, email: Email, onReportSpam: (Email) ->
                 modifier = Modifier.padding(top = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedButton(onClick = { }) {
+                OutlinedButton(onClick = { onOpenEmail(email) }) {
+                    Text("Open")
+                }
+                OutlinedButton(onClick = {
+                    onEmailDelete(email)
+                    deleted = true
+                }) {
                     Text("Delete")
                 }
                 if (!email.isSpam && !reportSpamClicked) {

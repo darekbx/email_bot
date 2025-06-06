@@ -1,6 +1,7 @@
 package com.darekbx.emailbot.di
 
 import android.app.Application
+import android.app.NotificationManager
 import android.content.Context
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
@@ -21,6 +22,8 @@ import com.darekbx.emailbot.repository.storage.EncryptedConfiguration
 import com.darekbx.emailbot.ui.MainActivityViewModel
 import com.darekbx.emailbot.ui.emails.EmailsViewModel
 import com.darekbx.emailbot.ui.filters.FiltersViewModel
+import com.darekbx.emailbot.worker.BotNotificationManager
+import com.darekbx.notebookcheckreader.worker.KoinWorkerFactory
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
@@ -36,6 +39,11 @@ val appModules = module {
 
     factory { CleanUpBot(get(), get(), get(), get()) }
     single { RefreshBus() }
+
+    // Worker
+    single { androidContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
+    factory { BotNotificationManager(androidContext(), get()) }
+    single { KoinWorkerFactory(get(), get()) }
 }
 
 val databaseModule = module {
@@ -61,7 +69,7 @@ val imap = module {
 
 val viewModelModule = module {
     viewModel { ConfigurationViewModel(get(), get()) }
-    viewModel { EmailsViewModel(get(), get(), get(), get()) }
+    viewModel { EmailsViewModel(get(), get(), get(), get(), get()) }
     viewModel { MainActivityViewModel(get(), get()) }
     viewModel { FiltersViewModel(get(), get()) }
 }

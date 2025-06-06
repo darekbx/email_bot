@@ -1,9 +1,15 @@
 package com.darekbx.emailbot
 
+import android.app.AlertDialog
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
 import com.darekbx.emailbot.ui.theme.EmailBotTheme
 import com.darekbx.emailbot.navigation.AppNavHost
@@ -37,21 +44,17 @@ import com.darekbx.emailbot.ui.MainUiState
 import org.koin.androidx.compose.KoinAndroidContext
 import org.koin.androidx.compose.koinViewModel
 
-/**
- * Email Bot
- *
- * TODO:
- *  - Service with configured interval (1h/2h/4h/8h) which will check emails, and remove spam
- *  - Notification when flow was completed with summary (how many mails, how many spam, how many important)
- *  - Store in database latest emails, which need to check if they are spam
- *  - Notify/highlight about important emails ( android newsletter, kalejdoskop, unknown news and others)
- *
- *  - Integrations
- *    - Kalejdoskop newsletter
- *    - Infinite Android newsletter
- *    - Unknown news newsletter
- */
 class MainActivity : ComponentActivity() {
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            Toast.makeText(this, "Notification permission granted", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Notification permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,14 +75,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestNotificationPermission()
+        }
     }
 
     @Composable
     @OptIn(ExperimentalMaterial3Api::class)
     private fun AppBar(
         viewModel: MainActivityViewModel = koinViewModel(),
-        openFilters: () -> Unit = {},
-        refresh: () -> Unit = {}
+        openFilters: () -> Unit = {}
     ) {
         val uiState by viewModel.uiState.collectAsState()
         Surface(shadowElevation = 4.dp) {
@@ -131,5 +137,41 @@ class MainActivity : ComponentActivity() {
                     }
                 })
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private fun requestNotificationPermission() {
+        val permission = android.Manifest.permission.POST_NOTIFICATIONS
+        when {
+            ContextCompat.checkSelfPermission(
+                this,
+                permission
+            ) == PackageManager.PERMISSION_GRANTED -> {
+            }
+
+            shouldShowRequestPermissionRationale(permission) -> {
+                showPermissionRationaleDialog()
+            }
+
+            else -> {
+                requestPermissionLauncher.launch(permission)
+            }
+        }
+    }
+
+    private fun showPermissionRationaleDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Notification Permission")
+            .setMessage("This app needs notification permission to show clean up results.")
+            .setPositiveButton("OK") { _, _ ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
     }
 }
