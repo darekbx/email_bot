@@ -26,7 +26,7 @@ inline fun Modifier.ifTrue(value: Boolean, builder: Modifier.() -> Modifier): Mo
 @Composable
 fun ProgressView() {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75F)),
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(Modifier.size(64.dp))

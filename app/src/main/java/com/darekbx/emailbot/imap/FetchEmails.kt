@@ -81,9 +81,14 @@ class FetchEmails(
                 part.isMimeType("text/html") -> htmlContent = part.content.toString()
                 part.isMimeType("multipart/*") -> {
                     val nestedContent = extractMultipart(part.content as? Multipart)
-                    if (nestedContent is EmailContent.Mixed) {
-                        textContent = nestedContent.textContent
-                        htmlContent = nestedContent.htmlContent
+                    when (nestedContent) {
+                        is EmailContent.Mixed -> {
+                            textContent = nestedContent.textContent
+                            htmlContent = nestedContent.htmlContent
+                        }
+                        is EmailContent.Html -> htmlContent = nestedContent.html
+                        is EmailContent.Text -> textContent = nestedContent.text
+                        else -> {}
                     }
                 }
             }
