@@ -4,8 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.darekbx.emailbot.imap.Connection
 import com.darekbx.emailbot.model.ConfigurationInfo
-import com.darekbx.emailbot.model.Email
-import com.darekbx.emailbot.model.EmailContent
 import com.darekbx.emailbot.repository.storage.EncryptedConfiguration
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow

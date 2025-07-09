@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.darekbx.emailbot.BuildConfig
 import com.darekbx.emailbot.bot.CleanUpBot
+import com.darekbx.emailbot.domain.FetchSpamFiltersUseCase
 import com.darekbx.emailbot.repository.RefreshBus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +19,7 @@ sealed interface MainUiState {
 
 class MainActivityViewModel(
     private val cleanUpBot: CleanUpBot,
-    private val refreshBus: RefreshBus
+    private val refreshBus: RefreshBus,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MainUiState>(MainUiState.Idle)

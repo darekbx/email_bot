@@ -7,6 +7,7 @@ import com.darekbx.emailbot.model.Email
 import com.darekbx.emailbot.repository.RefreshBus
 import com.darekbx.emailbot.repository.database.dao.SpamDao
 import com.darekbx.emailbot.repository.database.entities.SpamDto
+import com.darekbx.emailbot.repository.storage.CommonPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.collections.forEach
@@ -16,11 +17,13 @@ class CleanUpBot(
     private val fetchEmails: FetchEmails,
     private val emailOperations: EmailOperations,
     private val spamDao: SpamDao,
-    private val refreshBus: RefreshBus
+    private val refreshBus: RefreshBus,
+    private val commonsPreferences: CommonPreferences
 ) {
     data class Result(
         val removedCount: Int,
-        val messagesCount: Int
+        val messagesCount: Int,
+        val totalRemovedCount: Int
     )
 
     suspend fun cleanUp() : Result {
@@ -49,7 +52,13 @@ class CleanUpBot(
             // 6. Notify about refresh
             refreshBus.publishChanges()
 
-            Result(removedCount, emails.size - removedCount)
+            // 7. Increment removed spam count in preferences
+            commonsPreferences.incrementRemovedSpamCount(removedCount)
+
+            // 8. Get total removed spam count
+            val totalRemovedCount = commonsPreferences.loadRemovedSpamCount()
+
+            Result(removedCount, emails.size - removedCount, totalRemovedCount)
         }
     }
 }

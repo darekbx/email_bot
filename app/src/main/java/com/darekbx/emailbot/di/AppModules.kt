@@ -16,6 +16,7 @@ import com.darekbx.emailbot.imap.FetchEmails
 import com.darekbx.emailbot.repository.RefreshBus
 import com.darekbx.emailbot.repository.database.AppDatabase
 import com.darekbx.emailbot.repository.database.dao.SpamDao
+import com.darekbx.emailbot.repository.storage.CommonPreferences
 import com.darekbx.emailbot.ui.configuration.ui.ConfigurationViewModel
 import com.darekbx.emailbot.repository.storage.CryptoUtils
 import com.darekbx.emailbot.repository.storage.EncryptedConfiguration
@@ -36,8 +37,9 @@ val appModules = module {
     single(named("master.key")) { BuildConfig.MASTER_KEY }
     single { CryptoUtils(get(named("master.key"))) }
     single { EncryptedConfiguration(get(), get()) }
+    single { CommonPreferences(get()) }
 
-    factory { CleanUpBot(get(), get(), get(), get()) }
+    factory { CleanUpBot(get(), get(), get(), get(), get()) }
     single { RefreshBus() }
 
     // Worker

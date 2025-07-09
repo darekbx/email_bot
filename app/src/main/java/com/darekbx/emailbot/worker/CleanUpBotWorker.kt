@@ -18,10 +18,10 @@ class CleanUpBotWorker(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            val (removedCount, emailsCount) = cleanUpBot.cleanUp()
+            val (removedCount, emailsCount, totalRemovedCount) = cleanUpBot.cleanUp()
             notificationManager.showNotification(
                 "Clean up completed",
-                "$emailsCount emails, removed $removedCount spam emails"
+                "$emailsCount emails, removed $removedCount spam emails.\nOverall removed: $totalRemovedCount"
             )
             Result.success()
         } catch (e: Exception) {

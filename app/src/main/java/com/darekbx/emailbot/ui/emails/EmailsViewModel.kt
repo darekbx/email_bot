@@ -57,8 +57,8 @@ class EmailsViewModel(
                 val emails = fetchEmails.fetch()
                     .sortedByDescending { it.messageNumber }
                 emails.markSpam(spamFilters)
-
-                _uiState.value = EmailsUiState.Success(emails)
+                val emailsWithoutSpam = emails.filter { !it.isSpam }
+                _uiState.value = EmailsUiState.Success(emailsWithoutSpam)
             } catch (e: Exception) {
                 if (BuildConfig.DEBUG) {
                     e.printStackTrace()

@@ -28,8 +28,9 @@ class BotNotificationManager(
             .setSmallIcon(R.drawable.email_bot_logo)
             .setContentTitle(title)
             .setContentText(message)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setAutoCancel(true)
+            .setSilent(true)
             .setContentIntent(createPendingIntent())
             .build()
 

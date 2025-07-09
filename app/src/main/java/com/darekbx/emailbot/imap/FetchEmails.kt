@@ -52,19 +52,19 @@ class FetchEmails(
             ?.firstOrNull() as? InternetAddress)?.address.orEmpty(),
         subject = message.subject.orEmpty(),
         content = extractEmailContent(message),
-        dateTime = message.sentDate.formatAsString()
+        dateTime = message.sentDate?.formatAsString() ?: "(not set)"
     )
 
     private fun extractEmailContent(message: Message): EmailContent {
-        try {
-            return when {
+        return try {
+            when {
                 message.isMimeType("text/plain") -> EmailContent.Text(message.content.toString())
                 message.isMimeType("text/html") -> EmailContent.Html(message.content.toString())
                 message.isMimeType("multipart/*") -> extractMultipart(message.content as? Multipart)
                 else -> EmailContent.Unknown
             }
         } catch (_: Exception) {
-            return EmailContent.Unknown
+            EmailContent.Unknown
         }
     }
 
