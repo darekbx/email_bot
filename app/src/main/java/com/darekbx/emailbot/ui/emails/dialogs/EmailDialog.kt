@@ -4,10 +4,13 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -15,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -120,32 +124,39 @@ private fun TextContent(content: EmailContent.Text) {
 
 @Composable
 private fun ColumnScope.HtmlContent(content: EmailContent.Html) {
-    AndroidView(
-        factory = { context ->
-            WebView(context).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-                webViewClient = WebViewClient()
-                settings.javaScriptEnabled = false
-                settings.loadWithOverviewMode = true
-                settings.useWideViewPort = true
-            }
-        },
-        update = { webView ->
-            webView.loadDataWithBaseURL(
-                null,
-                content.html,
-                "text/html",
-                "UTF-8",
-                null
-            )
-        },
-        modifier = Modifier
+    Box(
+        Modifier
             .fillMaxWidth()
             .weight(1F)
-    )
+            .padding(4.dp)
+        .clip(RoundedCornerShape(8.dp))
+    ) {
+        AndroidView(
+            factory = { context ->
+                WebView(context).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
+                    webViewClient = WebViewClient()
+                    settings.javaScriptEnabled = false
+                    settings.loadWithOverviewMode = true
+                    settings.useWideViewPort = true
+                }
+            },
+            update = { webView ->
+                webView.loadDataWithBaseURL(
+                    null,
+                    content.html,
+                    "text/html",
+                    "UTF-8",
+                    null
+                )
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+        )
+    }
 }
 
 @Composable
